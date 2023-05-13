@@ -93,7 +93,7 @@ void main() {
 
   // Ray origin, 1 units behind the canvas where the camera is
   // This is the camera position
-  vec3 ro = vec3(0, .2, 3);
+  vec3 ro = vec3(0, .3, 2);
 
   // Compute the ray direction for every pixel on screen (uv)
   // -1 so each ray is fired toward the canvas from the ray origin
@@ -113,7 +113,7 @@ void main() {
     vec3 point_normal = calc_normal(point);
 
     // Light location
-    vec3 light_position = vec3(0., 2., 3.);
+    vec3 light_position = vec3(0., 3., 5.);
     light_position.xz += vec2(sin(u_time * 2.), cos(u_time * 2.));
 
     // Calculate the amount the light is hiting the surface of the objects
