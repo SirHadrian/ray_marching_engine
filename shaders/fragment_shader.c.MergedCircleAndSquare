@@ -1,0 +1,56 @@
+#version 460 core
+
+layout(location = 0) out vec4 FragColor;
+
+uniform float u_time;
+uniform vec2 u_resolution;
+uniform vec2 u_mouse;
+
+#define T u_time
+#define R u_resolution
+#define FC gl_FragCoord
+#define M u_mouse
+
+#define S(a, b, t) smoothstep(a, b, t)
+
+vec3 background_color(vec2 uv);
+float square(vec2 uv, float radius);
+float circle(vec2 uv, float radius);
+vec3 draw_scene(vec2 uv);
+
+vec3 draw_scene(vec2 uv) {
+  vec3 scene = background_color(uv);
+
+  float circle = circle(uv, 0.1);
+  float square = square(uv - 0.1, 0.1);
+
+  float result = 0.0;
+
+  result = min(circle, square);
+
+  scene = mix(vec3(1.0, 0.0, 0.0), scene, step(0.0, result));
+
+  return scene;
+}
+
+float circle(vec2 uv, float radius) { return length(uv) - radius; }
+
+float square(vec2 uv, float radius) {
+  return max(abs(uv.x), abs(uv.y)) - radius;
+}
+
+vec3 background_color(vec2 uv) {
+  uv += 0.5;
+  return mix(vec3(1.0, 1.0, 0.0), vec3(1.0, 0.0, 0.0), uv.x);
+}
+
+void main() {
+
+  vec2 uv = FC.xy / R.xy;
+  uv -= 0.5;
+  uv.x *= R.x / R.y;
+
+  vec3 color = draw_scene(uv);
+
+  FragColor = vec4(color, 1.0);
+}
