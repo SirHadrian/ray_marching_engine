@@ -19,17 +19,51 @@ struct Ray {
   vec3 rd;
 };
 
-struct Object {
-  float sdf;
-  vec3 color;
-};
-
 struct Light {
   vec3 position;
   vec3 direction;
   vec3 color;
   float intensity;
 };
+
+struct Material {
+  vec3 ambientColor;  // k_a * i_a
+  vec3 diffuseColor;  // k_d * i_d
+  vec3 specularColor; // k_s * i_s
+  float alpha;        // shininess
+};
+
+struct Mesh {
+  float sdf;         // signed distance value from SDF or geometry
+  Material material; // material of object
+};
+
+Material gold() {
+  vec3 aCol = 0.5 * vec3(0.7, 0.5, 0);
+  vec3 dCol = 0.6 * vec3(0.7, 0.7, 0);
+  vec3 sCol = 0.6 * vec3(1, 1, 1);
+  float a = 5.;
+
+  return Material(aCol, dCol, sCol, a);
+}
+
+Material silver() {
+  vec3 aCol = 0.4 * vec3(0.8);
+  vec3 dCol = 0.5 * vec3(0.7);
+  vec3 sCol = 0.6 * vec3(1, 1, 1);
+  float a = 5.;
+
+  return Material(aCol, dCol, sCol, a);
+}
+
+Material checkerboard(vec3 p) {
+  vec3 aCol = vec3(1. + 0.7 * mod(floor(p.x) + floor(p.z), 2.0)) * 0.3;
+  vec3 dCol = vec3(0.3);
+  vec3 sCol = vec3(0);
+  float a = 1.;
+
+  return Material(aCol, dCol, sCol, a);
+}
 
 float planeSdf(vec3 point, vec3 orientation, float distanceFromOrigin) {
   return dot(point, orientation) + distanceFromOrigin;
@@ -39,40 +73,34 @@ float sphereSdf(vec3 point, vec3 offset, float radius) {
   return length(point - offset) - radius;
 }
 
-Object minObject(Object a, Object b) {
+Mesh minMesh(Mesh a, Mesh b) {
   if (a.sdf < b.sdf)
     return a;
   return b;
 }
 
-Object scene(vec3 point) {
+Mesh scene(vec3 point) {
 
-  Object sphere =
-      Object(sphereSdf(point, vec3(0., 0., -1.), .1), vec3(1., 0., 0.));
-  Object plane =
-      Object(planeSdf(point, vec3(0., 1., 0.), 1.),
-             vec3(.2 + .4 * mod(floor(point.x) + floor(point.z), 2.)));
-  Object sphere2 =
-      Object(sphereSdf(point, vec3(.5, 0., -.5), .1), vec3(0., 1., 0.));
-  const int OBJS_NUM = 3;
+  Mesh sphere = Mesh(sphereSdf(point, vec3(0., 0., 0.), .1), gold());
+  const int MESH_NUMB = 1;
 
-  Object objs[OBJS_NUM] = {sphere, sphere2, plane};
+  Mesh mesh_list[MESH_NUMB] = {sphere};
 
-  Object closest_object = Object(MAX_DEPTH, vec3(1.));
-  for (int i = 0; i < OBJS_NUM; i++) {
-    closest_object = minObject(closest_object, objs[i]);
+  Mesh closest_object = Mesh(MAX_DEPTH, silver());
+  for (int i = 0; i < MESH_NUMB; i++) {
+    closest_object = minMesh(closest_object, mesh_list[i]);
   }
 
   return closest_object;
 }
 
-Object rayMarch(Ray ray) {
+Mesh rayMarch(Ray ray) {
 
   float marched = 0.;
   float dist_scene = 0.;
   float steps = 0.;
 
-  Object closest_object = Object(MAX_DEPTH, vec3(1.));
+  Mesh closest_object = Mesh(MAX_DEPTH, silver());
 
   while (steps < MAX_MARCHING_STEPS) {
 
@@ -92,13 +120,14 @@ Object rayMarch(Ray ray) {
   return closest_object;
 }
 
-vec3 getNormal(vec3 p) {
+vec3 getNormal(vec3 point) {
 
   const float EPSILON = 0.001;
 
   vec2 e = vec2(EPSILON, 0.0);
-  vec3 n = vec3(scene(p).sdf) - vec3(scene(p - e.xyy).sdf, scene(p - e.yxy).sdf,
-                                     scene(p - e.yyx).sdf);
+  vec3 n = vec3(scene(point).sdf) - vec3(scene(point - e.xyy).sdf,
+                                         scene(point - e.yxy).sdf,
+                                         scene(point - e.yyx).sdf);
   return normalize(n);
 }
 
@@ -118,26 +147,20 @@ float softShadow(vec3 ro, vec3 rd, float mint, float tmax) {
 }
 
 vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
-                     vec3 object_color, Light light) {
+                     Material object_material, Light light) {
 
   // ambient
-  float k_a = 0.6;
-  vec3 i_a = object_color;
-  vec3 ambient = k_a * i_a;
+  vec3 ambient = object_material.ambientColor;
 
   // diffuse
-  float k_d = 0.5;
   float dotLN = clamp(dot(light.direction, surface_normal), 0., 1.);
-  vec3 i_d = light.color;
-  vec3 diffuse = k_d * dotLN * i_d;
+  vec3 diffuse = dotLN * object_material.diffuseColor;
 
   // specular
-  float k_s = 0.6;
   float dotRV =
       clamp(dot(reflect(light.direction, surface_normal), ray.rd), 0., 1.);
-  vec3 i_s = vec3(1, 1, 1);
-  float alpha = 10.;
-  vec3 specular = k_s * pow(dotRV, alpha) * i_s;
+  vec3 specular =
+      pow(dotRV, object_material.alpha) * object_material.specularColor;
 
   // Shadows
   float softShadow =
@@ -146,7 +169,7 @@ vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
   return (ambient + specular) + diffuse * softShadow;
 }
 
-vec3 light(vec3 point, vec3 object_color, Ray ray) {
+vec3 light(vec3 point, Material object_material, Ray ray) {
 
   vec3 surface_normal = getNormal(point);
 
@@ -171,10 +194,10 @@ vec3 light(vec3 point, vec3 object_color, Ray ray) {
   vec3 color = vec3(0.);
 
   color += light1.intensity *
-           phongReflection(point, surface_normal, ray, object_color, light1);
+           phongReflection(point, surface_normal, ray, object_material, light1);
 
   color += light2.intensity *
-           phongReflection(point, surface_normal, ray, object_color, light2);
+           phongReflection(point, surface_normal, ray, object_material, light2);
 
   return color;
 }
@@ -188,14 +211,15 @@ vec3 render(vec2 uv) {
 
   Ray ray = Ray(ro, rd);
 
-  Object closest_object = rayMarch(ray);
+  Mesh closest_object = rayMarch(ray);
+
   float dist = closest_object.sdf;
-  vec3 object_color = closest_object.color;
+  Material object_material = closest_object.material;
 
   if (dist < MAX_DEPTH) {
     vec3 point = ray.ro + dist * ray.rd;
 
-    vec3 light = light(point, object_color, ray);
+    vec3 light = light(point, object_material, ray);
 
     // Fog
     return mix(light, background,
