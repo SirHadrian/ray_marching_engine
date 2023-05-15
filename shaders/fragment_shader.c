@@ -41,12 +41,14 @@ Object minObject(Object a, Object b) {
 Object scene(vec3 point) {
 
   Object sphere =
-      Object(sphereSdf(point, vec3(0., 0., 0.), .1), vec3(1., 0., 0.));
+      Object(sphereSdf(point, vec3(0., 0., -1.), .1), vec3(1., 0., 0.));
   Object plane =
       Object(planeSdf(point, vec3(0., 1., 0.), 1.), vec3(0., 0., 1.));
-  const int OBJS_NUM = 2;
+  Object sphere2 =
+      Object(sphereSdf(point, vec3(.5, 0., -.5), .1), vec3(0., 1., 0.));
+  const int OBJS_NUM = 3;
 
-  Object objs[OBJS_NUM] = {sphere, plane};
+  Object objs[OBJS_NUM] = {sphere, sphere2, plane};
 
   Object closest_object = Object(MAX_DEPTH, vec3(1.));
   for (int i = 0; i < OBJS_NUM; i++) {
@@ -101,6 +103,12 @@ vec3 light(vec3 point, vec3 object_color) {
 
   vec3 diffuse =
       object_color * clamp(dot(light_vector, surface_normal), 0., 1.);
+
+  Ray shadow_ray = Ray(point + surface_normal * .02, light_vector);
+  float dist = rayMarch(shadow_ray).sdf;
+
+  if (dist < length(light_position - point))
+    return vec3(0.);
 
   return diffuse;
 }
