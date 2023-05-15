@@ -82,9 +82,10 @@ Mesh minMesh(Mesh a, Mesh b) {
 Mesh scene(vec3 point) {
 
   Mesh sphere = Mesh(sphereSdf(point, vec3(0., 0., 0.), .1), gold());
-  const int MESH_NUMB = 1;
+  Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), gold());
+  const int MESH_NUMB = 2;
 
-  Mesh mesh_list[MESH_NUMB] = {sphere};
+  Mesh mesh_list[MESH_NUMB] = {sphere, plane};
 
   Mesh closest_object = Mesh(MAX_DEPTH, silver());
   for (int i = 0; i < MESH_NUMB; i++) {
