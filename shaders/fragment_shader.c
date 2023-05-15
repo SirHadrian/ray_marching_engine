@@ -43,7 +43,8 @@ Object scene(vec3 point) {
   Object sphere =
       Object(sphereSdf(point, vec3(0., 0., -1.), .1), vec3(1., 0., 0.));
   Object plane =
-      Object(planeSdf(point, vec3(0., 1., 0.), 1.), vec3(0., 0., 1.));
+      Object(planeSdf(point, vec3(0., 1., 0.), 1.),
+             vec3(.2 + .4 * mod(floor(point.x) + floor(point.z), 2.)));
   Object sphere2 =
       Object(sphereSdf(point, vec3(.5, 0., -.5), .1), vec3(0., 1., 0.));
   const int OBJS_NUM = 3;
