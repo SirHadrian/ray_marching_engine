@@ -249,7 +249,7 @@ vec3 render(vec2 uv, vec2 mp) {
   vec3 lookAt = vec3(0., 0., 0.);
   vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.));
 
-  // rd *= rotateY(mp.x) * rotateX(mp.y);
+  rd *= rotateY(mp.x) * rotateX(mp.y);
 
   Ray ray = Ray(ro, rd);
 
