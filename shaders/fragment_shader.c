@@ -153,7 +153,7 @@ vec3 light(vec3 point, vec3 object_color, Ray ray) {
   // light #1
   vec3 light_position1 = vec3(1., 9., 5.);
   vec3 light_direction1 = normalize(light_position1 - point);
-  vec3 light_color1 = vec3(1., 1., 1.);
+  vec3 light_color1 = vec3(0., 0., 0.);
   float light_intensity1 = 0.6;
 
   Light light1 =
