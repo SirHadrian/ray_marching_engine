@@ -170,19 +170,33 @@ vec3 getNormal(vec3 point) {
   return normalize(n);
 }
 
-float softShadow(vec3 ro, vec3 rd, float mint, float tmax) {
+// float softShadow(vec3 ro, vec3 rd, float mint, float tmax) {
+//   float res = 1.0;
+//   float t = mint;
+//
+//   for (int i = 0; i < 16; i++) {
+//     float h = scene(ro + rd * t).sdf;
+//     res = min(res, 8.0 * h / t);
+//     t += clamp(h, 0.02, 0.10);
+//     if (h < 0.001 || t > tmax)
+//       break;
+//   }
+//
+//   return clamp(res, 0.0, 1.0);
+// }
+
+float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float w) {
   float res = 1.0;
   float t = mint;
-
-  for (int i = 0; i < 16; i++) {
-    float h = scene(ro + rd * t).sdf;
-    res = min(res, 8.0 * h / t);
-    t += clamp(h, 0.02, 0.10);
-    if (h < 0.001 || t > tmax)
+  for (int i = 0; i < 256 && t < maxt; i++) {
+    float h = scene(ro + t * rd).sdf;
+    res = min(res, h / (w * t));
+    t += clamp(h, 0.005, 0.50);
+    if (res < -1.0 || t > maxt)
       break;
   }
-
-  return clamp(res, 0.0, 1.0);
+  res = max(res, -1.0);
+  return 0.25 * (1.0 + res) * (1.0 + res) * (2.0 - res);
 }
 
 vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
@@ -202,10 +216,16 @@ vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
       pow(dotRV, object_material.alpha) * object_material.specularColor;
 
   // Shadows
-  float softShadow =
-      clamp(softShadow(point, light.direction, 0.02, 2.5), 0.1, 1.0);
+  float soft_shadow =
+      clamp(softShadow(point, light.direction, 0.02, 4.0, 0.), 0.0, 1.0);
 
-  return (ambient + specular) + diffuse * softShadow;
+  // Ray shadow_ray = Ray(point + surface_normal * .02, light.direction);
+  // float dist = rayMarch(shadow_ray).sdf;
+  //
+  // if (dist < length(light.position - point))
+  //   return ambient;
+
+  return (ambient + specular) + diffuse * soft_shadow;
 }
 
 vec3 light(vec3 point, Material object_material, Ray ray) {
@@ -213,16 +233,16 @@ vec3 light(vec3 point, Material object_material, Ray ray) {
   vec3 surface_normal = getNormal(point);
 
   // light #1
-  vec3 light_position1 = vec3(1., 9., 5.);
+  vec3 light_position1 = vec3(sin(T * 3.), 5., cos(T * 3.) + 3.);
   vec3 light_direction1 = normalize(light_position1 - point);
   vec3 light_color1 = vec3(0., 0., 0.);
-  float light_intensity1 = 0.6;
+  float light_intensity1 = 1.0;
 
   Light light1 =
       Light(light_position1, light_direction1, light_color1, light_intensity1);
 
   // light #2
-  vec3 light_position2 = vec3(9., 3., -5.);
+  vec3 light_position2 = vec3(5., 3., 0.);
   vec3 light_direction2 = normalize(light_position2 - point);
   vec3 light_color2 = vec3(0., 0., 0.);
   float light_intensity2 = 0.7;
@@ -235,8 +255,9 @@ vec3 light(vec3 point, Material object_material, Ray ray) {
   color += light1.intensity *
            phongReflection(point, surface_normal, ray, object_material, light1);
 
-  color += light2.intensity *
-           phongReflection(point, surface_normal, ray, object_material, light2);
+  // color += light2.intensity *
+  //          phongReflection(point, surface_normal, ray, object_material,
+  //          light2);
 
   return color;
 }
@@ -253,7 +274,7 @@ vec3 render(vec2 uv, vec2 mp) {
 
   vec3 background = vec3(.3, .5, .9);
 
-  vec3 ro = vec3(0., 3., 5.);
+  vec3 ro = vec3(0., .5, 2.);
   vec3 lookAt = vec3(0., 0., 0.);
 
   vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.));
