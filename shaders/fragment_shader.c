@@ -59,9 +59,9 @@ Material silver() {
 }
 
 Material checkerboard(vec3 p) {
-  vec3 aCol = vec3(1. + 0.7 * mod(floor(p.x) + floor(p.z), 2.0)) * 0.3;
-  vec3 dCol = vec3(0.3);
-  vec3 sCol = vec3(0);
+  vec3 aCol = vec3(0.8 * mod(floor(p.x) + floor(p.z), 2.0)) * 0.3;
+  vec3 dCol = vec3(0.1);
+  vec3 sCol = vec3(0.);
   float a = 1.;
 
   return Material(aCol, dCol, sCol, a);
