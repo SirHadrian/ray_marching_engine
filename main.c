@@ -230,6 +230,7 @@ void compile_shaders(const GLuint *const shader_program) {
   glDeleteShader(vertex_shader);
   glDeleteShader(fragment_shader);
 }
+
 static void cursor_position_callback(GLFWwindow *window, double xPos,
                                      double yPos) {
   if (inWindow) {
