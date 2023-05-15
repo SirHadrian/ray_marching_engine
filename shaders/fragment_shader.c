@@ -116,7 +116,7 @@ vec3 light(vec3 point, vec3 object_color) {
 
 vec3 render(vec2 uv) {
 
-  vec3 background = vec3(.1);
+  vec3 background = vec3(.5);
 
   vec3 ro = vec3(0., 0., 1.);
   vec3 rd = normalize(vec3(uv, -1.));
@@ -129,10 +129,14 @@ vec3 render(vec2 uv) {
 
   if (dist < MAX_DEPTH) {
     vec3 point = ray.ro + dist * ray.rd;
-    return light(point, object_color);
+
+    vec3 light = light(point, object_color);
+
+    return mix(light, background,
+               1. - exp(-.001 * closest_object.sdf * closest_object.sdf));
   }
 
-  return background;
+  return background - max(.9 * ray.rd.y, 0.);
 }
 
 void main() {
