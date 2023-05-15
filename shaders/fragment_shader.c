@@ -14,6 +14,8 @@ uniform vec2 u_mouse;
 #define PRECISION 0.01
 #define MAX_DEPTH 50.
 
+#define PI 3.14159265359
+
 struct Ray {
   vec3 ro;
   vec3 rd;
@@ -84,6 +86,12 @@ mat3 rotateZ(float theta) {
   float c = cos(theta);
   float s = sin(theta);
   return mat3(vec3(c, -s, 0), vec3(s, c, 0), vec3(0, 0, 1));
+}
+
+// Rotate around a circular path
+mat2 rotate2d(float theta) {
+  float s = sin(theta), c = cos(theta);
+  return mat2(c, -s, s, c);
 }
 
 // Identity matrix.
@@ -245,10 +253,10 @@ vec3 render(vec2 uv, vec2 mp) {
 
   vec3 background = vec3(.3, .5, .9);
 
-  vec3 ro = vec3(1., 2., 2.);
+  vec3 ro = vec3(0., 3., 5.);
   vec3 lookAt = vec3(0., 0., 0.);
-  vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.));
 
+  vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.));
   rd *= rotateY(mp.x) * rotateX(mp.y);
 
   Ray ray = Ray(ro, rd);
@@ -274,8 +282,14 @@ vec3 render(vec2 uv, vec2 mp) {
 
 void main() {
 
-  vec2 uv = (FC.xy - .5 * R.xy) / R.y;
-  vec2 mp = vec2(1. - M.x / R.x, 1. - M.y / R.y) - .5;
+  vec2 uv = FC.xy / R.xy;
+  uv -= .5;
+  uv.x *= R.x / R.y;
+
+  vec2 mp = M.xy / R.xy;
+  mp.xy = 1. - mp.xy;
+  mp -= .5;
+  mp.x *= R.x / R.y;
 
   vec3 color = vec3(0.);
   color = render(uv, mp);
