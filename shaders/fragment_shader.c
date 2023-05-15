@@ -95,23 +95,40 @@ vec3 getNormal(vec3 p) {
   return normalize(n);
 }
 
-vec3 light(vec3 point, vec3 object_color) {
+vec3 light(vec3 point, vec3 object_color, Ray ray) {
 
-  vec3 light_position = vec3(0., 5., 3.);
-
-  vec3 light_vector = normalize(light_position - point);
   vec3 surface_normal = getNormal(point);
 
-  vec3 diffuse =
-      object_color * clamp(dot(light_vector, surface_normal), 0., 1.);
+  vec3 light_position = vec3(0., 5., 3.);
+  vec3 light_direction = normalize(light_position - point);
 
-  Ray shadow_ray = Ray(point + surface_normal * .02, light_vector);
+  // ambient
+  float k_a = 0.6;
+  vec3 i_a = vec3(0.7, 0.7, 0);
+  vec3 ambient = k_a * i_a;
+
+  // diffuse
+  float k_d = 0.5;
+  float dotLN = clamp(dot(light_direction, surface_normal), 0., 1.);
+  vec3 i_d = vec3(0.7, 0.5, 0);
+  vec3 diffuse = k_d * dotLN * i_d;
+
+  // specular
+  float k_s = 0.6;
+  float dotRV =
+      clamp(dot(reflect(light_direction, surface_normal), ray.rd), 0., 1.);
+  vec3 i_s = vec3(1, 1, 1);
+  float alpha = 10.;
+  vec3 specular = k_s * pow(dotRV, alpha) * i_s;
+
+  // Shadows
+  Ray shadow_ray = Ray(point + surface_normal * .02, light_direction);
   float dist = rayMarch(shadow_ray).sdf;
 
   if (dist < length(light_position - point))
-    return vec3(0.);
+    return ambient;
 
-  return diffuse;
+  return ambient + diffuse + specular;
 }
 
 vec3 render(vec2 uv) {
@@ -130,12 +147,14 @@ vec3 render(vec2 uv) {
   if (dist < MAX_DEPTH) {
     vec3 point = ray.ro + dist * ray.rd;
 
-    vec3 light = light(point, object_color);
+    vec3 light = light(point, object_color, ray);
 
+    // Fog
     return mix(light, background,
                1. - exp(-.001 * closest_object.sdf * closest_object.sdf));
   }
 
+  // Fog height
   return background - max(.9 * ray.rd.y, 0.);
 }
 
