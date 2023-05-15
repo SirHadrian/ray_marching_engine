@@ -95,6 +95,21 @@ vec3 getNormal(vec3 p) {
   return normalize(n);
 }
 
+float softShadow(vec3 ro, vec3 rd, float mint, float tmax) {
+  float res = 1.0;
+  float t = mint;
+
+  for (int i = 0; i < 16; i++) {
+    float h = scene(ro + rd * t).sdf;
+    res = min(res, 8.0 * h / t);
+    t += clamp(h, 0.02, 0.10);
+    if (h < 0.001 || t > tmax)
+      break;
+  }
+
+  return clamp(res, 0.0, 1.0);
+}
+
 vec3 light(vec3 point, vec3 object_color, Ray ray) {
 
   vec3 surface_normal = getNormal(point);
@@ -104,13 +119,13 @@ vec3 light(vec3 point, vec3 object_color, Ray ray) {
 
   // ambient
   float k_a = 0.6;
-  vec3 i_a = vec3(0.7, 0.7, 0);
+  vec3 i_a = object_color;
   vec3 ambient = k_a * i_a;
 
   // diffuse
   float k_d = 0.5;
   float dotLN = clamp(dot(light_direction, surface_normal), 0., 1.);
-  vec3 i_d = vec3(0.7, 0.5, 0);
+  vec3 i_d = vec3(.5);
   vec3 diffuse = k_d * dotLN * i_d;
 
   // specular
@@ -122,13 +137,10 @@ vec3 light(vec3 point, vec3 object_color, Ray ray) {
   vec3 specular = k_s * pow(dotRV, alpha) * i_s;
 
   // Shadows
-  Ray shadow_ray = Ray(point + surface_normal * .02, light_direction);
-  float dist = rayMarch(shadow_ray).sdf;
+  float softShadow =
+      clamp(softShadow(point, light_direction, 0.02, 2.5), 0.1, 1.0);
 
-  if (dist < length(light_position - point))
-    return ambient;
-
-  return ambient + diffuse + specular;
+  return (ambient + specular) + diffuse * softShadow;
 }
 
 vec3 render(vec2 uv) {
