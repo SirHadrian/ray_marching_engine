@@ -65,6 +65,30 @@ Material checkerboard(vec3 p) {
   return Material(aCol, dCol, sCol, a);
 }
 
+// Rotation matrix around the X axis.
+mat3 rotateX(float theta) {
+  float c = cos(theta);
+  float s = sin(theta);
+  return mat3(vec3(1, 0, 0), vec3(0, c, -s), vec3(0, s, c));
+}
+
+// Rotation matrix around the Y axis.
+mat3 rotateY(float theta) {
+  float c = cos(theta);
+  float s = sin(theta);
+  return mat3(vec3(c, 0, s), vec3(0, 1, 0), vec3(-s, 0, c));
+}
+
+// Rotation matrix around the Z axis.
+mat3 rotateZ(float theta) {
+  float c = cos(theta);
+  float s = sin(theta);
+  return mat3(vec3(c, -s, 0), vec3(s, c, 0), vec3(0, 0, 1));
+}
+
+// Identity matrix.
+mat3 identity() { return mat3(vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1)); }
+
 float planeSdf(vec3 point, vec3 orientation, float distanceFromOrigin) {
   return dot(point, orientation) + distanceFromOrigin;
 }
@@ -81,11 +105,17 @@ Mesh minMesh(Mesh a, Mesh b) {
 
 Mesh scene(vec3 point) {
 
-  Mesh sphere = Mesh(sphereSdf(point, vec3(0., 0., 0.), .1), gold());
-  Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), gold());
-  const int MESH_NUMB = 2;
+  Mesh sphere1 = Mesh(sphereSdf(point, vec3(0., 0., 0.), .1), silver());
+  // float distort = sin(.5 * T * point.x) * .1;
+  // // distort += sin(.5 * T * point.y) * .1;
+  // distort += sin(T * point.z) * .1;
+  // sphere1.sdf += distort;
 
-  Mesh mesh_list[MESH_NUMB] = {sphere, plane};
+  Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .1), gold());
+  Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
+  const int MESH_NUMB = 3;
+
+  Mesh mesh_list[MESH_NUMB] = {sphere1, sphere2, plane};
 
   Mesh closest_object = Mesh(MAX_DEPTH, silver());
   for (int i = 0; i < MESH_NUMB; i++) {
@@ -203,12 +233,14 @@ vec3 light(vec3 point, Material object_material, Ray ray) {
   return color;
 }
 
-vec3 render(vec2 uv) {
+vec3 render(vec2 uv, vec2 mp) {
 
-  vec3 background = vec3(.5);
+  vec3 background = vec3(.3, .5, .9);
 
   vec3 ro = vec3(0., 0., 1.);
   vec3 rd = normalize(vec3(uv, -1.));
+
+  rd *= rotateY(mp.x) * rotateX(mp.y);
 
   Ray ray = Ray(ro, rd);
 
@@ -234,9 +266,10 @@ vec3 render(vec2 uv) {
 void main() {
 
   vec2 uv = (FC.xy - .5 * R.xy) / R.y;
+  vec2 mp = vec2(M.x / R.x, 1. - M.y / R.y) - .5;
 
   vec3 color = vec3(0.);
-  color = render(uv);
+  color = render(uv, mp);
 
   // Gamma correction
   color = pow(color, vec3(.4545));
