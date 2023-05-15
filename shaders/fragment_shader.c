@@ -233,14 +233,23 @@ vec3 light(vec3 point, Material object_material, Ray ray) {
   return color;
 }
 
+mat3 camera(vec3 ro, vec3 lookAt) {
+  vec3 cd = normalize(lookAt - ro);                 // camera direction
+  vec3 cr = normalize(cross(vec3(0., 1., 0.), cd)); // camera right
+  vec3 cu = normalize(cross(cd, cr));               // camera up
+
+  return mat3(-cr, cu, -cd);
+}
+
 vec3 render(vec2 uv, vec2 mp) {
 
   vec3 background = vec3(.3, .5, .9);
 
-  vec3 ro = vec3(0., 0., 1.);
-  vec3 rd = normalize(vec3(uv, -1.));
+  vec3 ro = vec3(1., 2., 2.);
+  vec3 lookAt = vec3(0., 0., 0.);
+  vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.));
 
-  rd *= rotateY(mp.x) * rotateX(mp.y);
+  // rd *= rotateY(mp.x) * rotateX(mp.y);
 
   Ray ray = Ray(ro, rd);
 
@@ -266,7 +275,7 @@ vec3 render(vec2 uv, vec2 mp) {
 void main() {
 
   vec2 uv = (FC.xy - .5 * R.xy) / R.y;
-  vec2 mp = vec2(M.x / R.x, 1. - M.y / R.y) - .5;
+  vec2 mp = vec2(1. - M.x / R.x, 1. - M.y / R.y) - .5;
 
   vec3 color = vec3(0.);
   color = render(uv, mp);
