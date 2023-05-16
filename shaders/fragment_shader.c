@@ -356,7 +356,7 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
   // light #1
   vec3 light_position1 = vec3(sin(T * 3.) + 1., 5., cos(T * 3.) + 0.);
   vec3 light_direction1 = normalize(light_position1 - point);
-  vec3 light_color1 = vec3(0., 0., 0.);
+  vec3 light_color1 = vec3(1., 1., 1.);
   float light_intensity1 = 0.3;
 
   Light light1 =
@@ -365,7 +365,7 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
   // light #2
   vec3 light_position2 = vec3(5., 3., -3.);
   vec3 light_direction2 = normalize(light_position2 - point);
-  vec3 light_color2 = vec3(0., 0., 0.);
+  vec3 light_color2 = vec3(1., 1., 1.);
   float light_intensity2 = 0.7;
 
   Light light2 =
@@ -378,7 +378,8 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
   for (int i = 0; i < LIGHTS_NUMBER; i++) {
 
     color += lights[i].intensity *
-             phongLight(point, ray, object_material, lights[i]);
+             phongLight(point, ray, object_material, lights[i]) *
+             lights[i].color;
   }
 
   return color;
