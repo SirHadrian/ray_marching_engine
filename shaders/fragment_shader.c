@@ -402,11 +402,25 @@ vec3 render(vec2 uv, vec2 mp) {
   return background - max(.9 * ray.rd.y, 0.);
 }
 
+// =========================================================================================================
+// Anti-Aliasing AAx4
+// =========================================================================================================
+
+vec2 offsetUV(vec2 offset) { return (2. * (FC.xy + offset) - R.xy) / R.y; }
+
+vec3 AAx4(vec2 mp) {
+  vec4 offset = vec4(.125, -.125, .375, -.375);
+  vec3 aax4 = render(offsetUV(offset.xz), mp) +
+              render(offsetUV(offset.yw), mp) +
+              render(offsetUV(offset.wx), mp) + render(offsetUV(offset.zy), mp);
+  return aax4 / 4.;
+}
+
 void main() {
 
-  vec2 uv = FC.xy / R.xy;
-  uv -= .5;
-  uv.x *= R.x / R.y;
+  // vec2 uv = FC.xy / R.xy;
+  // uv -= .5;
+  // uv.x *= R.x / R.y;
 
   vec2 mp = M.xy / R.xy;
   mp.xy = 1. - mp.xy;
@@ -414,7 +428,7 @@ void main() {
   mp.x *= R.x / R.y;
 
   vec3 color = vec3(0.);
-  color = render(uv, mp);
+  color = AAx4(mp);
 
   // Gamma correction
   color = pow(color, vec3(.4545));
