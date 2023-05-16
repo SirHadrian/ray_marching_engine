@@ -183,9 +183,9 @@ float opSmoothSubtraction2(float d1, float d2, float k) {
 Mesh scene(vec3 point) {
 
   float dist = sin(T) * .5 + .5 + .1;
-  Mesh sphere1 = Mesh(sphereSdf(point, vec3(0., 0., 0.), dist), silver());
+  Mesh sphere1 = Mesh(sphereSdf(point, vec3(0., 0., 0.), dist), gold());
 
-  Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .3), gold());
+  // Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .3), gold());
 
   Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
 
@@ -308,17 +308,20 @@ vec3 phongLight(vec3 point, Ray ray, Material object_material, Light light) {
   vec3 surface_normal = getNormal(point);
 
   // ambient
-  vec3 ambient = object_material.ambientColor;
+  float k_a = 0.6;
+  vec3 ambient = k_a * object_material.ambientColor;
 
   // diffuse
+  float k_d = 0.5;
   float dotLN = clamp(dot(light.direction, surface_normal), 0., 1.);
-  vec3 diffuse = dotLN * object_material.diffuseColor;
+  vec3 diffuse = k_d * dotLN * object_material.diffuseColor;
 
   // specular
+  float k_s = 0.6;
   float dotRV =
       clamp(dot(reflect(light.direction, surface_normal), ray.rd), 0., 1.);
   vec3 specular =
-      pow(dotRV, object_material.alpha) * object_material.specularColor;
+      k_s * pow(dotRV, object_material.alpha) * object_material.specularColor;
 
   // Shadows
   float soft_shadow =
@@ -360,7 +363,7 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
       Light(light_position1, light_direction1, light_color1, light_intensity1);
 
   // light #2
-  vec3 light_position2 = vec3(5., 3., 0.);
+  vec3 light_position2 = vec3(5., 3., -3.);
   vec3 light_direction2 = normalize(light_position2 - point);
   vec3 light_color2 = vec3(0., 0., 0.);
   float light_intensity2 = 0.7;
