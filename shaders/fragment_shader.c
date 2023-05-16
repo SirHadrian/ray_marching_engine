@@ -186,7 +186,9 @@ Mesh scene(vec3 point) {
   Mesh sphere1 = Mesh(sphereSdf(point, vec3(0., 0., 0.), dist), silver());
 
   Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .3), gold());
+
   Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
+
   const int MESH_NUMB = 2;
 
   // Mesh sphere = Mesh(opSmoothUnion(sphere1.sdf, sphere2.sdf, .1), silver());
