@@ -1,9 +1,17 @@
 #version 460 core
 layout(location = 0) out vec4 FragColor;
 
+// =========================================================================================================
+// Uniforms
+// =========================================================================================================
+
 uniform float u_time;
 uniform vec2 u_resolution;
 uniform vec2 u_mouse;
+
+// =========================================================================================================
+// Global constants
+// =========================================================================================================
 
 #define FC gl_FragCoord
 #define R u_resolution
@@ -15,6 +23,10 @@ uniform vec2 u_mouse;
 #define MAX_DEPTH 50.
 
 #define PI 3.14159265359
+
+// =========================================================================================================
+// Scene custom objects
+// =========================================================================================================
 
 struct Ray {
   vec3 ro;
@@ -40,34 +52,51 @@ struct Mesh {
   Material material; // material of object
 };
 
+// =========================================================================================================
+// Custom materials
+// =========================================================================================================
+
 Material gold() {
   vec3 aCol = 0.5 * vec3(0.7, 0.5, 0);
   vec3 dCol = 0.6 * vec3(0.7, 0.7, 0);
   vec3 sCol = 0.6 * vec3(1, 1, 1);
-  float a = 5.;
+  float alpha = 5.;
 
-  return Material(aCol, dCol, sCol, a);
+  return Material(aCol, dCol, sCol, alpha);
 }
 
 Material silver() {
   vec3 aCol = 0.4 * vec3(0.8);
   vec3 dCol = 0.5 * vec3(0.7);
   vec3 sCol = 0.6 * vec3(1, 1, 1);
-  float a = 5.;
+  float alpha = 5.;
 
-  return Material(aCol, dCol, sCol, a);
+  return Material(aCol, dCol, sCol, alpha);
+}
+
+Material background() {
+  vec3 aCol = vec3(.3, .5, .9);
+  vec3 dCol = vec3(0.);
+  vec3 sCol = vec3(0.);
+  float alpha = 1.;
+
+  return Material(aCol, dCol, sCol, alpha);
 }
 
 Material checkerboard(vec3 p) {
   vec3 aCol = vec3(0.8 * mod(floor(p.x) + floor(p.z), 2.0)) * 0.3;
   vec3 dCol = vec3(0.1);
   vec3 sCol = vec3(0.);
-  float a = 1.;
+  float alpha = 1.;
 
-  return Material(aCol, dCol, sCol, a);
+  return Material(aCol, dCol, sCol, alpha);
 }
 
-// Rotation matrix around the X axis.
+// =========================================================================================================
+// Translations
+// =========================================================================================================
+
+//  Rotation matrix around the X axis.
 mat3 rotateX(float theta) {
   float c = cos(theta);
   float s = sin(theta);
@@ -97,6 +126,10 @@ mat2 rotate2d(float theta) {
 // Identity matrix.
 mat3 identity() { return mat3(vec3(1, 0, 0), vec3(0, 1, 0), vec3(0, 0, 1)); }
 
+// =========================================================================================================
+// SDFs
+// =========================================================================================================
+
 float planeSdf(vec3 point, vec3 orientation, float distanceFromOrigin) {
   return dot(point, orientation) + distanceFromOrigin;
 }
@@ -105,6 +138,9 @@ float sphereSdf(vec3 point, vec3 offset, float radius) {
   return length(point - offset) - radius;
 }
 
+// =========================================================================================================
+// Mesh operations
+// =========================================================================================================
 Mesh minMesh(Mesh a, Mesh b) {
   if (a.sdf < b.sdf)
     return a;
@@ -139,6 +175,10 @@ float opSmoothSubtraction2(float d1, float d2, float k) {
   return mix(d1, -d2, h) + k * h * (1.0 - h);
 }
 
+// =========================================================================================================
+// Scene
+// =========================================================================================================
+
 Mesh scene(vec3 point) {
 
   float dist = sin(T) * .5 + .5 + .1;
@@ -154,13 +194,17 @@ Mesh scene(vec3 point) {
 
   Mesh mesh_list[MESH_NUMB] = {sphere1, plane};
 
-  Mesh closest_object = Mesh(MAX_DEPTH, silver());
+  Mesh closest_object = Mesh(MAX_DEPTH, background());
   for (int i = 0; i < MESH_NUMB; i++) {
     closest_object = minMesh(closest_object, mesh_list[i]);
   }
 
   return closest_object;
 }
+
+// =========================================================================================================
+// Raymarch algorithm
+// =========================================================================================================
 
 Mesh rayMarch(Ray ray) {
 
@@ -188,6 +232,10 @@ Mesh rayMarch(Ray ray) {
   return closest_object;
 }
 
+// =========================================================================================================
+// Surface normal
+// =========================================================================================================
+
 vec3 getNormal(vec3 point) {
 
   const float EPSILON = 0.001;
@@ -198,6 +246,10 @@ vec3 getNormal(vec3 point) {
                                          scene(point - e.yyx).sdf);
   return normalize(n);
 }
+
+// =========================================================================================================
+// Shadows
+// =========================================================================================================
 
 // float softShadow(vec3 ro, vec3 rd, float mint, float tmax) {
 //   float res = 1.0;
@@ -228,8 +280,14 @@ float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float w) {
   return 0.25 * (1.0 + res) * (1.0 + res) * (2.0 - res);
 }
 
-vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
-                     Material object_material, Light light) {
+// =========================================================================================================
+// Lighting
+// =========================================================================================================
+
+vec3 phongReflection(vec3 point, Ray ray, Material object_material,
+                     Light light) {
+
+  vec3 surface_normal = getNormal(point);
 
   // ambient
   vec3 ambient = object_material.ambientColor;
@@ -248,6 +306,7 @@ vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
   float soft_shadow =
       clamp(softShadow(point, light.direction, 0.02, 5.0, .1), 0.0, 1.0);
 
+  // Raymarching simple shadow
   // Ray shadow_ray = Ray(point + surface_normal * .02, light.direction);
   // float dist = rayMarch(shadow_ray).sdf;
   //
@@ -257,9 +316,13 @@ vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
   return (ambient + specular) + diffuse * soft_shadow;
 }
 
+// =========================================================================================================
+// Scene lights
+// =========================================================================================================
+
 vec3 light(vec3 point, Material object_material, Ray ray) {
 
-  vec3 surface_normal = getNormal(point);
+  vec3 color = vec3(0.);
 
   // light #1
   vec3 light_position1 = vec3(sin(T * 3.), 5., cos(T * 3.) + 3.);
@@ -279,10 +342,8 @@ vec3 light(vec3 point, Material object_material, Ray ray) {
   Light light2 =
       Light(light_position2, light_direction2, light_color2, light_intensity2);
 
-  vec3 color = vec3(0.);
-
-  color += light1.intensity *
-           phongReflection(point, surface_normal, ray, object_material, light1);
+  color +=
+      light1.intensity * phongReflection(point, ray, object_material, light1);
 
   // color += light2.intensity *
   //          phongReflection(point, surface_normal, ray, object_material,
@@ -290,6 +351,10 @@ vec3 light(vec3 point, Material object_material, Ray ray) {
 
   return color;
 }
+
+// =========================================================================================================
+// Camera translations
+// =========================================================================================================
 
 mat3 camera(vec3 ro, vec3 lookAt) {
   vec3 cd = normalize(lookAt - ro);                 // camera direction
@@ -299,27 +364,35 @@ mat3 camera(vec3 ro, vec3 lookAt) {
   return mat3(-cr, cu, -cd);
 }
 
+// =========================================================================================================
+// Render objects and lights
+// =========================================================================================================
+
 vec3 render(vec2 uv, vec2 mp) {
 
-  vec3 background = vec3(.3, .5, .9);
+  vec3 background = background().ambientColor;
 
   vec3 ro = vec3(0., .5, 5.);
   vec3 lookAt = vec3(0., 0., 0.);
 
+  // Make camera to center on lookAt point
   vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.));
+  // Look around with mouse
   rd *= rotateY(mp.x) * rotateX(mp.y);
 
   Ray ray = Ray(ro, rd);
 
+  // Shoot the rays and get hit scene object
   Mesh closest_object = rayMarch(ray);
 
-  float dist = closest_object.sdf;
-  Material object_material = closest_object.material;
+  // If the closest_object sdf is smaller than the MAX_DEPTH then we hit a scene
+  // object else we hit the "background object".
+  if (closest_object.sdf < MAX_DEPTH) {
 
-  if (dist < MAX_DEPTH) {
-    vec3 point = ray.ro + dist * ray.rd;
+    // Get the point where the ray hit the surface of an object
+    vec3 point = ray.ro + closest_object.sdf * ray.rd;
 
-    vec3 light = light(point, object_material, ray);
+    vec3 light = light(point, closest_object.material, ray);
 
     // Fog
     return mix(light, background,
