@@ -141,6 +141,7 @@ float sphereSdf(vec3 point, vec3 offset, float radius) {
 // =========================================================================================================
 // Mesh operations
 // =========================================================================================================
+
 Mesh minMesh(Mesh a, Mesh b) {
   if (a.sdf < b.sdf)
     return a;
@@ -284,8 +285,7 @@ float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float w) {
 // Lighting
 // =========================================================================================================
 
-vec3 phongReflection(vec3 point, Ray ray, Material object_material,
-                     Light light) {
+vec3 phongLight(vec3 point, Ray ray, Material object_material, Light light) {
 
   vec3 surface_normal = getNormal(point);
 
@@ -304,7 +304,7 @@ vec3 phongReflection(vec3 point, Ray ray, Material object_material,
 
   // Shadows
   float soft_shadow =
-      clamp(softShadow(point, light.direction, 0.02, 5.0, .1), 0.0, 1.0);
+      clamp(softShadow(point, light.direction, 0.02, 5.0, .3), 0.0, 1.0);
 
   // Raymarching simple shadow
   // Ray shadow_ray = Ray(point + surface_normal * .02, light.direction);
@@ -313,7 +313,7 @@ vec3 phongReflection(vec3 point, Ray ray, Material object_material,
   // if (dist < length(light.position - point))
   //   return ambient;
 
-  return (ambient + specular) + diffuse * soft_shadow;
+  return (ambient + specular + diffuse) * soft_shadow;
 }
 
 // =========================================================================================================
@@ -325,7 +325,7 @@ vec3 light(vec3 point, Material object_material, Ray ray) {
   vec3 color = vec3(0.);
 
   // light #1
-  vec3 light_position1 = vec3(sin(T * 3.), 5., cos(T * 3.) + 3.);
+  vec3 light_position1 = vec3(sin(T * 3.) + 1., 5., cos(T * 3.) + 0.);
   vec3 light_direction1 = normalize(light_position1 - point);
   vec3 light_color1 = vec3(0., 0., 0.);
   float light_intensity1 = 1.0;
@@ -342,8 +342,7 @@ vec3 light(vec3 point, Material object_material, Ray ray) {
   Light light2 =
       Light(light_position2, light_direction2, light_color2, light_intensity2);
 
-  color +=
-      light1.intensity * phongReflection(point, ray, object_material, light1);
+  color += light1.intensity * phongLight(point, ray, object_material, light1);
 
   // color += light2.intensity *
   //          phongReflection(point, surface_normal, ray, object_material,
@@ -372,7 +371,7 @@ vec3 render(vec2 uv, vec2 mp) {
 
   vec3 background = background().ambientColor;
 
-  vec3 ro = vec3(0., .5, 5.);
+  vec3 ro = vec3(0., 5., 9.);
   vec3 lookAt = vec3(0., 0., 0.);
 
   // Make camera to center on lookAt point
