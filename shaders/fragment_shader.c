@@ -120,7 +120,7 @@ Mesh scene(vec3 point) {
   // sphere1.sdf += distort;
 
   Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .1), gold());
-  Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
+  Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), .5), checkerboard(point));
   const int MESH_NUMB = 3;
 
   Mesh mesh_list[MESH_NUMB] = {sphere1, sphere2, plane};
@@ -217,7 +217,7 @@ vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
 
   // Shadows
   float soft_shadow =
-      clamp(softShadow(point, light.direction, 0.02, 4.0, 0.), 0.0, 1.0);
+      clamp(softShadow(point, light.direction, 0.02, 5.0, .3), 0.0, 1.0);
 
   // Ray shadow_ray = Ray(point + surface_normal * .02, light.direction);
   // float dist = rayMarch(shadow_ray).sdf;
