@@ -354,7 +354,7 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
   vec3 light_position1 = vec3(sin(T * 3.) + 1., 5., cos(T * 3.) + 0.);
   vec3 light_direction1 = normalize(light_position1 - point);
   vec3 light_color1 = vec3(0., 0., 0.);
-  float light_intensity1 = 1.0;
+  float light_intensity1 = 0.3;
 
   Light light1 =
       Light(light_position1, light_direction1, light_color1, light_intensity1);
@@ -368,11 +368,15 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
   Light light2 =
       Light(light_position2, light_direction2, light_color2, light_intensity2);
 
-  color += light1.intensity * phongLight(point, ray, object_material, light1);
+  // Add lights
+  const int LIGHTS_NUMBER = 2;
+  Light lights[LIGHTS_NUMBER] = {light1, light2};
 
-  // color += light2.intensity *
-  //          phongReflection(point, surface_normal, ray, object_material,
-  //          light2);
+  for (int i = 0; i < LIGHTS_NUMBER; i++) {
+
+    color += lights[i].intensity *
+             phongLight(point, ray, object_material, lights[i]);
+  }
 
   return color;
 }
@@ -454,7 +458,8 @@ void main() {
   mp.x *= R.x / R.y;
 
   vec3 color = vec3(0.);
-  color = AAx4(mp);
+  // color = AAx4(mp);
+  color = render(offsetUV(vec2(0.)), mp);
 
   // Gamma correction
   color = pow(color, vec3(.4545));
