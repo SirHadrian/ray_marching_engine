@@ -332,7 +332,11 @@ vec3 phongLight(vec3 point, Ray ray, Material object_material, Light light) {
   // Ambient occlusion
   float ambient_occlusion = ambientOcclusion(point, surface_normal);
 
-  return (ambient * ambient_occlusion) +
+  // Light reflect from objects
+  vec3 reflect_back = .05 * object_material.ambientColor *
+                      clamp(dot(surface_normal, light.direction), 0., 1.);
+
+  return (reflect_back + ambient) * ambient_occlusion +
          (specular * ambient_occlusion + diffuse) * soft_shadow;
 }
 
