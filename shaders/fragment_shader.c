@@ -11,7 +11,7 @@ uniform vec2 u_mouse;
 #define M u_mouse
 
 #define MAX_MARCHING_STEPS 100.
-#define PRECISION 0.01
+#define PRECISION .001
 #define MAX_DEPTH 50.
 
 #define PI 3.14159265359
@@ -111,19 +111,48 @@ Mesh minMesh(Mesh a, Mesh b) {
   return b;
 }
 
+float opUnion(float d1, float d2) { return min(d1, d2); }
+
+float opSmoothUnion(float d1, float d2, float k) {
+  float h = clamp(0.5 + 0.5 * (d2 - d1) / k, 0.0, 1.0);
+  return mix(d2, d1, h) - k * h * (1.0 - h);
+}
+
+float opIntersection(float d1, float d2) { return max(d1, d2); }
+
+float opSmoothIntersection(float d1, float d2, float k) {
+  float h = clamp(0.5 - 0.5 * (d2 - d1) / k, 0.0, 1.0);
+  return mix(d2, d1, h) + k * h * (1.0 - h);
+}
+
+float opSubtraction(float d1, float d2) { return max(-d1, d2); }
+
+float opSmoothSubtraction(float d1, float d2, float k) {
+  float h = clamp(0.5 - 0.5 * (d2 + d1) / k, 0.0, 1.0);
+  return mix(d2, -d1, h) + k * h * (1.0 - h);
+}
+
+float opSubtraction2(float d1, float d2) { return max(d1, -d2); }
+
+float opSmoothSubtraction2(float d1, float d2, float k) {
+  float h = clamp(0.5 - 0.5 * (d2 + d1) / k, 0.0, 1.0);
+  return mix(d1, -d2, h) + k * h * (1.0 - h);
+}
+
 Mesh scene(vec3 point) {
 
-  Mesh sphere1 = Mesh(sphereSdf(point, vec3(0., 0., 0.), .1), silver());
-  // float distort = sin(.5 * T * point.x) * .1;
-  // // distort += sin(.5 * T * point.y) * .1;
-  // distort += sin(T * point.z) * .1;
-  // sphere1.sdf += distort;
+  float dist = sin(T) * .5 + .5 + .1;
+  Mesh sphere1 = Mesh(sphereSdf(point, vec3(0., 0., 0.), dist), silver());
 
-  Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .1), gold());
-  Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), .5), checkerboard(point));
-  const int MESH_NUMB = 3;
+  Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .3), gold());
+  Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
+  const int MESH_NUMB = 2;
 
-  Mesh mesh_list[MESH_NUMB] = {sphere1, sphere2, plane};
+  // Mesh sphere = Mesh(opSmoothUnion(sphere1.sdf, sphere2.sdf, .1), silver());
+
+  // Mesh mesh_list[MESH_NUMB] = {sphere, plane};
+
+  Mesh mesh_list[MESH_NUMB] = {sphere1, plane};
 
   Mesh closest_object = Mesh(MAX_DEPTH, silver());
   for (int i = 0; i < MESH_NUMB; i++) {
@@ -217,7 +246,7 @@ vec3 phongReflection(vec3 point, vec3 surface_normal, Ray ray,
 
   // Shadows
   float soft_shadow =
-      clamp(softShadow(point, light.direction, 0.02, 5.0, .3), 0.0, 1.0);
+      clamp(softShadow(point, light.direction, 0.02, 5.0, .1), 0.0, 1.0);
 
   // Ray shadow_ray = Ray(point + surface_normal * .02, light.direction);
   // float dist = rayMarch(shadow_ray).sdf;
@@ -274,7 +303,7 @@ vec3 render(vec2 uv, vec2 mp) {
 
   vec3 background = vec3(.3, .5, .9);
 
-  vec3 ro = vec3(0., .5, 2.);
+  vec3 ro = vec3(0., .5, 5.);
   vec3 lookAt = vec3(0., 0., 0.);
 
   vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.));
