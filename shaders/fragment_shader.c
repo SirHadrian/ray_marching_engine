@@ -282,6 +282,22 @@ float softShadow(vec3 ro, vec3 rd, float mint, float maxt, float w) {
 }
 
 // =========================================================================================================
+// Ambient oclusion
+// =========================================================================================================
+
+float ambientOcclusion(vec3 p, vec3 normal) {
+  float occ = 0.0;
+  float weight = 1.0;
+  for (int i = 0; i < 8; i++) {
+    float len = 0.01 + 0.02 * float(i * i);
+    float dist = scene(p + normal * len).sdf;
+    occ += (len - dist) * weight;
+    weight *= 0.85;
+  }
+  return 1.0 - clamp(0.6 * occ, 0.0, 1.0);
+}
+
+// =========================================================================================================
 // Lighting
 // =========================================================================================================
 
@@ -313,14 +329,18 @@ vec3 phongLight(vec3 point, Ray ray, Material object_material, Light light) {
   // if (dist < length(light.position - point))
   //   return ambient;
 
-  return (ambient + specular + diffuse) * soft_shadow;
+  // Ambient occlusion
+  float ambient_occlusion = ambientOcclusion(point, surface_normal);
+
+  return (ambient * ambient_occlusion) +
+         (specular * ambient_occlusion + diffuse) * soft_shadow;
 }
 
 // =========================================================================================================
 // Scene lights
 // =========================================================================================================
 
-vec3 light(vec3 point, Material object_material, Ray ray) {
+vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
 
   vec3 color = vec3(0.);
 
@@ -371,7 +391,7 @@ vec3 render(vec2 uv, vec2 mp) {
 
   vec3 background = background().ambientColor;
 
-  vec3 ro = vec3(0., 5., 9.);
+  vec3 ro = vec3(0., 1., 5.);
   vec3 lookAt = vec3(0., 0., 0.);
 
   // Make camera to center on lookAt point
@@ -391,7 +411,7 @@ vec3 render(vec2 uv, vec2 mp) {
     // Get the point where the ray hit the surface of an object
     vec3 point = ray.ro + closest_object.sdf * ray.rd;
 
-    vec3 light = light(point, closest_object.material, ray);
+    vec3 light = sceneLights(point, closest_object.material, ray);
 
     // Fog
     return mix(light, background,
