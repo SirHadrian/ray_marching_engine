@@ -18,8 +18,8 @@ uniform vec2 u_mouse;
 #define T u_time
 #define M u_mouse
 
-#define MAX_MARCHING_STEPS 100.
-#define PRECISION .001
+#define MAX_MARCHING_STEPS 50.
+#define PRECISION .01
 #define MAX_DEPTH 100.
 
 #define PI 3.14159265359
@@ -238,14 +238,15 @@ float fBM(vec2 uv) {
 
 Mesh scene(vec3 point) {
 
-  float dist = sin(T) * .5 + .5 + .1;
+  float dist = sin(T) * .5 + .5 + .5;
   Mesh sphere1 = Mesh(sphereSdf(point, vec3(0., 0., 0.), dist), gold());
 
   // Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .3), gold());
 
   Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
 
-  sphere1.sdf += fBM(point.xz * 2.) * .3;
+  sphere1.sdf += noise(point.xz * 4.) * .2;
+  // plane.sdf += sin(point.x) + sin(point.z);
 
   const int MESH_NUMB = 2;
 
@@ -471,11 +472,11 @@ vec3 render(vec2 uv, vec2 mp) {
 
   vec3 background = background().ambientColor;
 
-  vec3 ro = vec3(0., .5, 3.);
+  vec3 ro = vec3(0., 1., 3.);
   vec3 lookAt = vec3(0., 0., 0.);
 
   // Make camera to center on lookAt point
-  vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.0));
+  vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.5));
   // Look around with mouse
   rd *= rotateY(mp.x) * rotateX(mp.y);
 
