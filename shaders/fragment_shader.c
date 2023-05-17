@@ -19,8 +19,8 @@ uniform vec2 u_mouse;
 #define M u_mouse
 
 #define MAX_MARCHING_STEPS 100.
-#define PRECISION .01
-#define MAX_DEPTH 50.
+#define PRECISION .001
+#define MAX_DEPTH 100.
 
 #define PI 3.14159265359
 
@@ -180,97 +180,6 @@ float opSmoothSubtraction2(float d1, float d2, float k) {
 // Scene
 // =========================================================================================================
 
-// Some useful functions
-vec3 mod289(vec3 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec2 mod289(vec2 x) { return x - floor(x * (1.0 / 289.0)) * 289.0; }
-vec3 permute(vec3 x) { return mod289(((x * 34.0) + 1.0) * x); }
-
-//
-// Description : GLSL 2D simplex noise function
-//      Author : Ian McEwan, Ashima Arts
-//  Maintainer : ijm
-//     Lastmod : 20110822 (ijm)
-//     License :
-//  Copyright (C) 2011 Ashima Arts. All rights reserved.
-//  Distributed under the MIT License. See LICENSE file.
-//  https://github.com/ashima/webgl-noise
-//
-float snoise(vec2 uv) {
-
-  // Precompute values for skewed triangular grid
-  const vec4 C = vec4(0.211324865405187,
-                      // (3.0-sqrt(3.0))/6.0
-                      0.366025403784439,
-                      // 0.5*(sqrt(3.0)-1.0)
-                      -0.577350269189626,
-                      // -1.0 + 2.0 * C.x
-                      0.024390243902439);
-  // 1.0 / 41.0
-
-  // First corner (x0)
-  vec2 i = floor(uv + dot(uv, C.yy));
-  vec2 x0 = uv - i + dot(i, C.xx);
-
-  // Other two corners (x1, x2)
-  vec2 i1 = vec2(0.0);
-  i1 = (x0.x > x0.y) ? vec2(1.0, 0.0) : vec2(0.0, 1.0);
-  vec2 x1 = x0.xy + C.xx - i1;
-  vec2 x2 = x0.xy + C.zz;
-
-  // Do some permutations to avoid
-  // truncation effects in permutation
-  i = mod289(i);
-  vec3 p =
-      permute(permute(i.y + vec3(0.0, i1.y, 1.0)) + i.x + vec3(0.0, i1.x, 1.0));
-
-  vec3 m = max(0.5 - vec3(dot(x0, x0), dot(x1, x1), dot(x2, x2)), 0.0);
-
-  m = m * m;
-  m = m * m;
-
-  // Gradients:
-  //  41 pts uniformly over a line, mapped onto a diamond
-  //  The ring size 17*17 = 289 is close to a multiple
-  //      of 41 (41*7 = 287)
-
-  vec3 x = 2.0 * fract(p * C.www) - 1.0;
-  vec3 h = abs(x) - 0.5;
-  vec3 ox = floor(x + 0.5);
-  vec3 a0 = x - ox;
-
-  // Normalise gradients implicitly by scaling m
-  // Approximation of: m *= inversesqrt(a0*a0 + h*h);
-  m *= 1.79284291400159 - 0.85373472095314 * (a0 * a0 + h * h);
-
-  // Compute final noise value at P
-  vec3 g = vec3(0.0);
-  g.x = a0.x * x0.x + h.x * x0.y;
-  g.yz = a0.yz * vec2(x1.x, x2.x) + h.yz * vec2(x1.y, x2.y);
-  return 130.0 * dot(m, g);
-}
-
-float fBM(vec2 uv) {
-
-  // Properties
-  const int octaves = 4;
-  float lacunarity = 2.0;
-  float gain = 0.5;
-  //
-  // Initial values
-  float amplitude = 0.5;
-  float frequency = 1.;
-  float y = 0.;
-
-  // Loop of octaves
-  for (int i = 0; i < octaves; i++) {
-    y += amplitude * snoise(frequency * uv);
-    frequency *= lacunarity;
-    amplitude *= gain;
-  }
-
-  return y;
-}
-
 Mesh scene(vec3 point) {
 
   float dist = sin(T) * .5 + .5 + .1;
@@ -280,7 +189,7 @@ Mesh scene(vec3 point) {
 
   Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
 
-  plane.sdf += fBM(point.xz);
+  // plane.sdf += perlinNoise(point.xz);
 
   const int MESH_NUMB = 2;
 
@@ -306,11 +215,10 @@ Mesh rayMarch(Ray ray) {
 
   float marched = 0.;
   float dist_scene = 0.;
-  int steps = 0;
 
-  Mesh closest_object = Mesh(MAX_DEPTH, silver());
+  Mesh closest_object = Mesh(MAX_DEPTH, background());
 
-  while (steps < MAX_MARCHING_STEPS) {
+  for (int i = 0; i < MAX_MARCHING_STEPS; i++) {
 
     closest_object = scene(ray.ro + marched * ray.rd);
 
@@ -318,13 +226,11 @@ Mesh rayMarch(Ray ray) {
 
     marched += dist_scene;
 
-    if (dist_scene < PRECISION || marched > MAX_DEPTH)
+    if (abs(dist_scene) < PRECISION || marched > MAX_DEPTH)
       break;
-
-    steps++;
   }
-
   closest_object.sdf = marched;
+
   return closest_object;
 }
 
@@ -332,15 +238,25 @@ Mesh rayMarch(Ray ray) {
 // Surface normal
 // =========================================================================================================
 
-vec3 getNormal(vec3 point) {
+// vec3 getNormal(vec3 point) {
+//
+//   const float EPSILON = 0.001;
+//
+//   vec2 e = vec2(EPSILON, 0.0);
+//   vec3 n = vec3(scene(point).sdf) - vec3(scene(point - e.xyy).sdf,
+//                                          scene(point - e.yxy).sdf,
+//                                          scene(point - e.yyx).sdf);
+//   return normalize(n);
+// }
 
-  const float EPSILON = 0.01;
+vec3 getSurfaceNormal(vec3 p) {
 
-  vec2 e = vec2(EPSILON, 0.0);
-  vec3 n = vec3(scene(point).sdf) - vec3(scene(point - e.xyy).sdf,
-                                         scene(point - e.yxy).sdf,
-                                         scene(point - e.yyx).sdf);
-  return normalize(n);
+  const float d0 = scene(p).sdf;
+  const vec2 epsilon = vec2(.0001, 0.);
+  vec3 d1 = vec3(scene(p - epsilon.xyy).sdf, scene(p - epsilon.yxy).sdf,
+                 scene(p - epsilon.yyx).sdf);
+
+  return normalize(d0 - d1);
 }
 
 // =========================================================================================================
@@ -398,7 +314,7 @@ float ambientOcclusion(vec3 p, vec3 normal) {
 
 vec3 phongLight(vec3 point, Ray ray, Material object_material, Light light) {
 
-  vec3 surface_normal = getNormal(point);
+  vec3 surface_normal = getSurfaceNormal(point);
 
   // ambient
   float k_a = 0.6;
@@ -450,7 +366,7 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
   vec3 light_position1 = vec3(sin(T * 3.) + 1., 5., cos(T * 3.) + 0.);
   vec3 light_direction1 = normalize(light_position1 - point);
   vec3 light_color1 = vec3(1., 1., 1.);
-  float light_intensity1 = 0.3;
+  float light_intensity1 = 0.9;
 
   Light light1 =
       Light(light_position1, light_direction1, light_color1, light_intensity1);
@@ -465,8 +381,9 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
       Light(light_position2, light_direction2, light_color2, light_intensity2);
 
   // Add lights
-  const int LIGHTS_NUMBER = 2;
-  Light lights[LIGHTS_NUMBER] = {light1, light2};
+  const int LIGHTS_NUMBER = 1;
+  // Light lights[LIGHTS_NUMBER] = {light1, light2};
+  Light lights[LIGHTS_NUMBER] = {light1};
 
   for (int i = 0; i < LIGHTS_NUMBER; i++) {
 
@@ -498,11 +415,11 @@ vec3 render(vec2 uv, vec2 mp) {
 
   vec3 background = background().ambientColor;
 
-  vec3 ro = vec3(0., 1., 5.);
+  vec3 ro = vec3(0., .5, 3.);
   vec3 lookAt = vec3(0., 0., 0.);
 
   // Make camera to center on lookAt point
-  vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.));
+  vec3 rd = camera(ro, lookAt) * normalize(vec3(uv, -1.0));
   // Look around with mouse
   rd *= rotateY(mp.x) * rotateX(mp.y);
 
