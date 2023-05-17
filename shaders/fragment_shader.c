@@ -180,6 +180,62 @@ float opSmoothSubtraction2(float d1, float d2, float k) {
 // Scene
 // =========================================================================================================
 
+vec2 hash(vec2 seed) {
+
+  vec2 r1 = vec2(4241., 3452.);
+  vec2 r2 = vec2(532., 4534.);
+
+  float m1 = 42334.;
+
+  vec2 rr = vec2(dot(seed, r1), dot(seed, r2));
+
+  return -1. + 2. * fract(sin(rr) * m1);
+}
+
+float noise(vec2 uv) {
+
+  vec2 id = floor(uv);
+  vec2 gv = fract(uv);
+
+  vec2 curve = gv * gv * (3. - 2. * gv);
+
+  vec2 blc = vec2(0, 0);
+  vec2 brc = vec2(1, 0);
+
+  vec2 tlc = vec2(0, 1);
+  vec2 trc = vec2(1, 1);
+
+  float b = mix(dot(hash(id + blc), gv - blc), dot(hash(id + brc), gv - brc),
+                curve.x);
+
+  float t = mix(dot(hash(id + tlc), gv - tlc), dot(hash(id + trc), gv - trc),
+                curve.x);
+
+  return mix(b, t, curve.y);
+}
+
+float fBM(vec2 uv) {
+
+  // Properties
+  const int octaves = 4;
+  float lacunarity = 2.0;
+  float gain = 0.5;
+  //
+  // Initial values
+  float amplitude = 0.5;
+  float frequency = 1.;
+  float y = 0.;
+
+  // Loop of octaves
+  for (int i = 0; i < octaves; i++) {
+    y += amplitude * noise(frequency * uv);
+    frequency *= lacunarity;
+    amplitude *= gain;
+  }
+
+  return y;
+}
+
 Mesh scene(vec3 point) {
 
   float dist = sin(T) * .5 + .5 + .1;
@@ -189,7 +245,7 @@ Mesh scene(vec3 point) {
 
   Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
 
-  // plane.sdf += perlinNoise(point.xz);
+  sphere1.sdf += fBM(point.xz * 2.) * .3;
 
   const int MESH_NUMB = 2;
 
@@ -381,9 +437,9 @@ vec3 sceneLights(vec3 point, Material object_material, Ray ray) {
       Light(light_position2, light_direction2, light_color2, light_intensity2);
 
   // Add lights
-  const int LIGHTS_NUMBER = 1;
+  const int LIGHTS_NUMBER = 2;
   // Light lights[LIGHTS_NUMBER] = {light1, light2};
-  Light lights[LIGHTS_NUMBER] = {light1};
+  Light lights[LIGHTS_NUMBER] = {light1, light2};
 
   for (int i = 0; i < LIGHTS_NUMBER; i++) {
 
