@@ -18,9 +18,9 @@ uniform vec2 u_mouse;
 #define T u_time
 #define M u_mouse
 
-#define MAX_MARCHING_STEPS 50.
-#define PRECISION .01
-#define MAX_DEPTH 100.
+#define MAX_MARCHING_STEPS 200.
+#define PRECISION .005
+#define MAX_DEPTH 50.
 
 #define PI 3.14159265359
 
@@ -217,7 +217,7 @@ float noise(vec2 uv) {
 float fBM(vec2 uv) {
 
   // Properties
-  const int octaves = 4;
+  const int octaves = 5;
   float lacunarity = 2.0;
   float gain = 0.5;
   //
@@ -236,6 +236,24 @@ float fBM(vec2 uv) {
   return y;
 }
 
+// Compact, self-contained version of IQ's 3D value noise function.
+float n3D(vec3 p) {
+
+  const vec3 s = vec3(113., 57., 27.);
+  vec3 ip = floor(p);
+  p -= ip;
+  vec4 h = vec4(0., s.yz, s.y + s.z) + dot(ip, s);
+  // p = p*p*(3. - 2.*p);
+  p *= p * p * (p * (p * 6. - 15.) + 10.);
+  h = mix(fract(sin(h) * 43758.5453), fract(sin(h + s.x) * 43758.5453), p.x);
+  h.xy = mix(h.xz, h.yw, p.y);
+  return mix(h.x, h.y, p.z); // Range: [0, 1].
+}
+
+float heightDisplacement(vec3 c) {
+  return sin(2.0 * c.x) * sin(2.0 * c.y) * sin(2.0 * c.z);
+}
+
 Mesh scene(vec3 point) {
 
   float dist = sin(T) * .5 + .5 + .5;
@@ -244,9 +262,7 @@ Mesh scene(vec3 point) {
   // Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .3), gold());
 
   Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
-
-  sphere1.sdf += noise(point.xz * 4.) * .2;
-  // plane.sdf += sin(point.x) + sin(point.z);
+  plane.sdf += clamp(1. - heightDisplacement(point), 0., 1.);
 
   const int MESH_NUMB = 2;
 
