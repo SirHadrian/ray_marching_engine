@@ -262,7 +262,7 @@ Mesh scene(vec3 point) {
   // Mesh sphere2 = Mesh(sphereSdf(point, vec3(.5, 0., 0.), .3), gold());
 
   Mesh plane = Mesh(planeSdf(point, vec3(0., 1., 0.), 1.), checkerboard(point));
-  plane.sdf += clamp(1. - heightDisplacement(point), 0., 1.);
+  // plane.sdf += clamp(1. - heightDisplacement(point), 0., 1.);
 
   const int MESH_NUMB = 2;
 
