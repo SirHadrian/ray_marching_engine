@@ -3,6 +3,7 @@
 #include <GLFW/glfw3.h>
 
 #include <math.h>
+#include <stdlib.h>
 #include <stdio.h>
 
 #ifndef TRUE
@@ -35,6 +36,9 @@
 
 #define MAJOR_VERS 4
 #define MINOR_VERS 6
+
+typedef unsigned int uint;
+typedef unsigned char uchar;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
 static void cursor_position_callback(GLFWwindow *window, double xPos, double yPos);
