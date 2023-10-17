@@ -1,14 +1,15 @@
 #include "main.h"
+#include <stdlib.h>
 
 // Cursor state
 double xMousePos, yMousePos = 0.f;
 int inWindow = FALSE;
 
-int main() {
-
-  if (!glfwInit()) {
+int 
+main(void) 
+{
+  if (!glfwInit())
     die("Could not initialize GLFW");
-  }
 
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, MAJOR_VERS);
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, MINOR_VERS);
@@ -16,16 +17,16 @@ int main() {
 
   GLFWwindow *window = glfwCreateWindow(WIDTH, HEIGHT, TITLE, NULL, NULL);
 
-  if (!window) {
+  if (!window) 
+  {
     glfwTerminate();
     die("Failed to create GLFW window");
   }
 
   glfwMakeContextCurrent(window);
 
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
     die("Failed to initialize GLAD");
-  }
 
   glViewport(0, 0, WIDTH, HEIGHT);
   glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -36,16 +37,16 @@ int main() {
   glfwSetCursorEnterCallback(window, cursor_enter_callback);
 
   float vertices[] = {
-      1.0f,  1.0f,  0.0f, // top right
-      1.0f,  -1.0f, 0.0f, // bottom right
-      -1.0f, -1.0f, 0.0f, // bottom left
-      -1.0f, 1.0f,  0.0f  // top left
+    1.0f,  1.0f,  0.0f, // top right
+    1.0f,  -1.0f, 0.0f, // bottom right
+    -1.0f, -1.0f, 0.0f, // bottom left
+    -1.0f, 1.0f,  0.0f  // top left
   };
 
-  unsigned int indices[] = {
-      // note that we start from 0!
-      0, 1, 3, // first triangle
-      1, 2, 3  // second triangle
+  uint indices[] = {
+    // note that we start from 0!
+    0, 1, 3, // first triangle
+    1, 2, 3  // second triangle
   };
 
   GLuint VAO, VBO, EBO;
@@ -61,7 +62,7 @@ int main() {
 
   glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
   glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-               GL_STATIC_DRAW);
+      GL_STATIC_DRAW);
 
   glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void *)0);
   glEnableVertexAttribArray(0);
@@ -81,8 +82,8 @@ int main() {
   // glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
   // Render loop
-  while (!glfwWindowShouldClose(window)) {
-
+  while (!glfwWindowShouldClose(window)) 
+  {
     // Input
     process_input(window, &shader_program);
 
@@ -93,9 +94,9 @@ int main() {
     float time = glfwGetTime();
     GLuint u_time_location = glGetUniformLocation(shader_program, UNIFORM_TIME);
     GLuint u_resolution_location =
-        glGetUniformLocation(shader_program, UNIFORM_RESOLUTION);
+      glGetUniformLocation(shader_program, UNIFORM_RESOLUTION);
     GLuint u_mouse_location =
-        glGetUniformLocation(shader_program, UNIFORM_MOUSE);
+      glGetUniformLocation(shader_program, UNIFORM_MOUSE);
 
     glUseProgram(shader_program);
     glUniform1f(u_time_location, time);
@@ -121,20 +122,24 @@ int main() {
 
   glfwTerminate();
 
-  return 0;
+  return EXIT_SUCCESS;
 }
 
-void framebuffer_size_callback(GLFWwindow *window, int width, int height) {
+void 
+framebuffer_size_callback(GLFWwindow *window, int width, int height) 
+{
   glViewport(0, 0, width, height);
 }
 
-void process_input(GLFWwindow *window, GLuint *shader_program) {
-
+void 
+process_input(GLFWwindow *window, GLuint *shader_program) 
+{
   if (glfwGetKey(window, GLFW_KEY_ESCAPE) ||
       glfwGetKey(window, GLFW_KEY_Q) == GLFW_PRESS)
     glfwSetWindowShouldClose(window, TRUE);
-  else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) {
 
+  else if (glfwGetKey(window, GLFW_KEY_R) == GLFW_PRESS) 
+  {
     glDeleteProgram(*shader_program);
     *shader_program = glCreateProgram();
 
@@ -142,30 +147,32 @@ void process_input(GLFWwindow *window, GLuint *shader_program) {
   }
 }
 
-char *get_shader(char *shader_file) {
-
+char*
+get_shader(char *shader_file)
+{
   FILE *file = fopen(shader_file, "r");
-  if (!file) {
-    die("Could not open the shader file");
+  if (!file)
+  {
+    fprintf(stderr, "ERROR: Could not open file: %s, does it exist?\n", shader_file);
+    exit(EXIT_FAILURE);
   }
 
   fseek(file, 0, SEEK_END);
-  unsigned int length = ftell(file);
+  ulint length = (ulint)ftell(file);
   fseek(file, 0, SEEK_SET);
 
   char *shader_string = malloc(sizeof *shader_string * (length + 1));
-  if (!shader_string) {
-    die("Could not alocate memory for file contents");
-  }
+  if (!shader_string) 
+    die("Could not alocate memory for the shader file contents");
 
-  uint cursor;
-  unsigned int index = 0;
+  int cursor;
+  uint index = 0;
 
-  while ((cursor = fgetc(file)) != EOF) {
+  while ((cursor = fgetc(file)) != EOF) 
+  {
     shader_string[index] = (char)cursor;
     index++;
   }
-
   shader_string[length] = '\0';
 
   fclose(file);
@@ -173,25 +180,29 @@ char *get_shader(char *shader_file) {
   return shader_string;
 }
 
-void die(const char *error) {
-  fprintf(stderr, "%s\n", error);
+void 
+die(const char *error) 
+{
+  fprintf(stderr, "ERROR: %s\n", error);
   exit(EXIT_FAILURE);
 }
 
-void compile_shaders(const GLuint *const shader_program) {
-
+void 
+compile_shaders(const GLuint *const shader_program) 
+{
   char *vertex_shader_source = get_shader(VERTEX_SHADER_PATH);
 
   GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
   glShaderSource(vertex_shader, 1, (char const *const *)&vertex_shader_source,
-                 NULL);
+      NULL);
   glCompileShader(vertex_shader);
 
   int success;
   char info_log[512];
   glGetShaderiv(vertex_shader, GL_COMPILE_STATUS, &success);
 
-  if (!success) {
+  if (!success) 
+  {
     glGetShaderInfoLog(vertex_shader, 512, NULL, info_log);
     fprintf(stderr, "Vertex shader compilation error: %s\n", info_log);
     return;
@@ -203,12 +214,13 @@ void compile_shaders(const GLuint *const shader_program) {
 
   GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
   glShaderSource(fragment_shader, 1,
-                 (char const *const *)&fragment_shader_source, NULL);
+      (char const *const *)&fragment_shader_source, NULL);
   glCompileShader(fragment_shader);
 
   glGetShaderiv(fragment_shader, GL_COMPILE_STATUS, &success);
 
-  if (!success) {
+  if (!success) 
+  {
     glGetShaderInfoLog(fragment_shader, 512, NULL, info_log);
     fprintf(stderr, "Fragment shader compilation error: %s\n", info_log);
     return;
@@ -221,7 +233,9 @@ void compile_shaders(const GLuint *const shader_program) {
   glLinkProgram(*shader_program);
 
   glGetProgramiv(*shader_program, GL_LINK_STATUS, &success);
-  if (!success) {
+
+  if (!success) 
+  {
     glGetProgramInfoLog(*shader_program, 512, NULL, info_log);
     fprintf(stderr, "Shader program linking error: %s\n", info_log);
     return;
@@ -231,18 +245,21 @@ void compile_shaders(const GLuint *const shader_program) {
   glDeleteShader(fragment_shader);
 }
 
-static void cursor_position_callback(GLFWwindow *window, double xPos,
-                                     double yPos) {
-  if (inWindow) {
+static void 
+cursor_position_callback(GLFWwindow *window, double xPos, double yPos) 
+{
+  if (inWindow) 
+  {
     xMousePos = xPos;
     yMousePos = yPos;
   }
 }
 
-void cursor_enter_callback(GLFWwindow *window, int inside) {
-  if (inside) {
+void 
+cursor_enter_callback(GLFWwindow *window, int inside) 
+{
+  if (inside) 
     inWindow = TRUE;
-  } else {
+  else 
     inWindow = FALSE;
-  }
 }

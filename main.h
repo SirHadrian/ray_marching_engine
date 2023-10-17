@@ -38,6 +38,7 @@
 #define MINOR_VERS 6
 
 typedef unsigned int uint;
+typedef unsigned long int ulint;
 typedef unsigned char uchar;
 
 void framebuffer_size_callback(GLFWwindow *window, int width, int height);
