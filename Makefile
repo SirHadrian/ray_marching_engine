@@ -1,16 +1,18 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -Wconversion -Wuninitialized # -Werror
-LIBS=-lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -lm -ldl
+LD=gcc
+CFLAGS=-Wall -Wextra -Wconversion -Wuninitialized# -Werror
+LDFLAGS=-lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -lm -ldl
 TARGET=window.out
+OBJS=main.o glad.o
 
-default: main.o glad.o
-	${CC} main.o glad.o -o window.out ${LIBS} && ./${TARGET}
+all: ${TARGET}
+	./${TARGET}
 
-main.o: main.c
-	${CC} ${CFLAGS} -c main.c
+${TARGET}: ${OBJS}
+	${LD} ${OBJS} ${LDFLAGS} -o ${TARGET}
 
-glad.o: glad.c
-	${CC} ${CFLAGS} -c glad.c
+%.o: %.c
+	${CC} ${CFLAGS} -c $<
 
 clean:
 	rm *.o ${TARGET}
