@@ -1,7 +1,7 @@
 CC=gcc
 LD=gcc
 CFLAGS=-Wall -Wextra -Wconversion -Wuninitialized# -Werror
-LDFLAGS=-lglfw3 -lGL -lX11 -lpthread -lXrandr -lXi -lm -ldl
+LDFLAGS=-lglfw -lGL -lX11 -lpthread -lXrandr -lXi -lm -ldl
 TARGET=window.out
 OBJS=main.o glad.o
 
