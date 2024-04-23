@@ -2,7 +2,7 @@
 
 Ray marching implemented in a fragment shader.
 
-![demo video](https://github.com/SirHadrian/ray_marching_engine/blob/be3066e0dfe1ac2f86fb6f020d1c00637acd1270/demo.mp4)
+https://github.com/SirHadrian/ray_marching_engine/assets/61782465/d673159f-4a41-491a-915f-14e684ebcfbf
 
 # Dependencies
 
