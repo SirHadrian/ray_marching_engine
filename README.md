@@ -1,5 +1,7 @@
 # openGL-shaders-template
 
+Ray marching implemented in a fragment shader.
+
 # Dependencies
 
 * [glad](https://glad.dav1d.de/) - copy the header files to ~/usr/local/include or include them directly.
