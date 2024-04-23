@@ -2,8 +2,6 @@
 
 Ray marching implemented in a fragment shader.
 
-https://github.com/SirHadrian/ray_marching_engine/assets/61782465/d673159f-4a41-491a-915f-14e684ebcfbf
-
 # Dependencies
 
 * [glad](https://glad.dav1d.de/) - copy the header files to ~/usr/local/include or include them directly.
